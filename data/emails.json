@@ -1,0 +1,8 @@
+[
+    {
+        "sender": "john@gmail.com",
+        "subject": "Meeting tomorrow",
+        "body": "We have a meeting",
+        "category": "Work"
+    }
+]
