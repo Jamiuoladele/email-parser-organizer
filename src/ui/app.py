@@ -1,162 +1,154 @@
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
 from src.ingestion.email_fetcher import fetch_emails
 from src.parser.email_parser import Email
 from src.parser.categorizer import EmailCategorizer
 from src.storage.storage import save_emails, export_to_excel
 from src.parser.file_parser import parse_file
 
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
-class EmailApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Email Parser Organizer")
-        self.root.geometry("1300x750")
-        self.root.configure(bg="#f5f7fb")
+
+class EmailApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Email Parser Organizer")
+        self.geometry("1300x750")
 
         self.categorizer = EmailCategorizer()
         self.parsed_emails = []
+        self.uploaded_files = []  # Track uploaded files
 
-        # HEADER 
-        header = tk.Frame(root, bg="#4f46e5", height=60)
+        # HEADER
+        header = ctk.CTkFrame(self, height=60, fg_color="#4f46e5")
         header.pack(side="top", fill="x")
-
-        tk.Label(
-            header,
-            text="📧 Email Parser Organizer",
-            bg="#4f46e5",
-            fg="white",
-            font=("Segoe UI", 18, "bold")
+        ctk.CTkLabel(
+            header, text="Email Parser Organizer", font=ctk.CTkFont(size=20, weight="bold")
         ).pack(pady=10)
 
-        # SIDEBAR 
-        sidebar = tk.Frame(root, bg="#111827", width=220)
+        # SIDEBAR
+        sidebar = ctk.CTkFrame(self, width=220, fg_color="#111827")
         sidebar.pack(side="left", fill="y")
-
-        tk.Label(
-            sidebar,
-            text="MENU",
-            bg="#111827",
-            fg="#9ca3af",
-            font=("Segoe UI", 12, "bold")
+        ctk.CTkLabel(
+            sidebar, text="MENU", font=ctk.CTkFont(size=14, weight="bold"), text_color="#9ca3af"
         ).pack(pady=20)
 
-        def create_btn(text, cmd):
-            btn = tk.Button(
-                sidebar,
-                text=text,
-                command=cmd,
-                bg="#1f2937",
-                fg="white",
-                bd=0,
-                padx=10,
-                pady=10,
-                anchor="w"
-            )
-            btn.pack(fill="x", padx=10, pady=5)
-
-        create_btn("Fetch Emails", self.fetch_emails)
-        create_btn("Upload File", self.upload_file)
-        create_btn("Save Emails", self.save_emails)
-        create_btn("Export to Excel", self.export_excel)
-
-        # MAIN
-        self.main = tk.Frame(root, bg="#f5f7fb")
-        self.main.pack(side="left", fill="both", expand=True)
-
-        #  CARDS
-        cards = tk.Frame(self.main, bg="#f5f7fb")
-        cards.pack(fill="x", padx=20, pady=15)
-
-        self.total_card = self.create_card(cards, "Total Emails", 0, 0)
-        self.work_card = self.create_card(cards, "Work", 0, 1)
-        self.personal_card = self.create_card(cards, "Personal", 0, 2)
-        self.other_card = self.create_card(cards, "Other", 0, 3)
-
-        # INPUT 
-        form = tk.Frame(self.main, bg="white")
-        form.pack(fill="x", padx=20, pady=10)
-
-        tk.Label(form, text="Sender", bg="white").grid(row=0, column=0, padx=5, pady=5)
-        self.sender_entry = tk.Entry(form, width=30)
-        self.sender_entry.grid(row=0, column=1)
-
-        tk.Label(form, text="Subject", bg="white").grid(row=1, column=0, padx=5, pady=5)
-        self.subject_entry = tk.Entry(form, width=30)
-        self.subject_entry.grid(row=1, column=1)
-
-        tk.Label(form, text="Body", bg="white").grid(row=2, column=0, padx=5, pady=5)
-        self.body_entry = tk.Entry(form, width=30)
-        self.body_entry.grid(row=2, column=1)
-
-        ttk.Button(form, text="Add Email", command=self.add_email)\
-            .grid(row=3, column=0, columnspan=2, pady=10)
-
-        #  SEARCH
-        search = tk.Frame(self.main, bg="#f5f7fb")
-        search.pack(fill="x", padx=20, pady=10)
-
-        tk.Label(search, text="Search:", bg="#f5f7fb").pack(side="left")
-        self.search_entry = tk.Entry(search, width=30)
-        self.search_entry.pack(side="left", padx=5)
-
-        ttk.Button(search, text="Search", command=self.search_emails).pack(side="left")
-        ttk.Button(search, text="Show All", command=self.display_emails).pack(side="left", padx=5)
-
-        # TABLE 
-        table_frame = tk.Frame(self.main)
-        table_frame.pack(fill="both", expand=True, padx=20, pady=10)
-
-        self.tree = ttk.Treeview(
-            table_frame,
-            columns=("Sender", "Subject", "Category", "Extracted", "Action"),
-            show="headings"
+        ctk.CTkButton(sidebar, text="Fetch Emails", command=self.fetch_emails).pack(
+            pady=5, padx=10, fill="x"
+        )
+        ctk.CTkButton(sidebar, text="Upload File", command=self.upload_file).pack(
+            pady=5, padx=10, fill="x"
+        )
+        ctk.CTkButton(sidebar, text="Save Emails", command=self.save_emails).pack(
+            pady=5, padx=10, fill="x"
+        )
+        ctk.CTkButton(sidebar, text="Export to Excel", command=self.export_excel).pack(
+            pady=5, padx=10, fill="x"
         )
 
-        for col in ("Sender", "Subject", "Category", "Extracted", "Action"):
-            self.tree.heading(col, text=col)
+        # MAIN CONTENT
+        self.main = ctk.CTkFrame(self, fg_color="#1e293b")
+        self.main.pack(side="left", fill="both", expand=True)
 
-        self.tree.column("Sender", width=180)
-        self.tree.column("Subject", width=200)
-        self.tree.column("Category", width=120)
-        self.tree.column("Extracted", width=450)
-        self.tree.column("Action", width=80)
+        # DASHBOARD CARDS
+        cards_frame = ctk.CTkFrame(self.main, fg_color="#1e293b")
+        cards_frame.pack(pady=15, padx=20, fill="x")
 
-        self.tree.pack(fill="both", expand=True)
+        self.total_card = self.create_card(cards_frame, "Total Emails", 0)
+        self.work_card = self.create_card(cards_frame, "Work", 0)
+        self.personal_card = self.create_card(cards_frame, "Personal", 0)
+        self.other_card = self.create_card(cards_frame, "Other", 0)
 
-        scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scroll.set)
-        scroll.pack(side="right", fill="y")
+        # TABS
+        self.tabs = ctk.CTkTabview(self.main)
+        self.tabs.pack(expand=True, fill="both", padx=20, pady=10)
+        self.tabs.add("Add/Search")
+        self.tabs.add("Email Table")
 
-        self.tree.bind("<ButtonRelease-1>", self.handle_click)
+        # ADD / SEARCH EMAILS TAB
+        self.add_tab_widgets()
+        # EMAIL TABLE TAB
+        self.table_tab_widgets()
 
-        # STATUS
-        self.status = tk.Label(root, text="Ready", bg="#4f46e5", fg="white", anchor="w")
+        # STATUS BAR
+        self.status = ctk.CTkLabel(self, text="Ready", anchor="w", fg_color="#4f46e5")
         self.status.pack(side="bottom", fill="x")
 
-    # ==CARDS
-    def create_card(self, parent, title, value, col):
-        frame = tk.Frame(parent, bg="white", width=220, height=100)
-        frame.grid(row=0, column=col, padx=10)
-
-        tk.Label(frame, text=title, bg="white", fg="#6b7280").pack(pady=5)
-        label = tk.Label(frame, text=value, bg="white", font=("Segoe UI", 16, "bold"))
+    # -------------------- WIDGETS --------------------
+    def create_card(self, parent, title, value):
+        card = ctk.CTkFrame(parent, width=220, height=100)
+        card.pack(side="left", padx=10, fill="both", expand=True)
+        ctk.CTkLabel(card, text=title, text_color="#cbd5e1").pack(pady=5)
+        label = ctk.CTkLabel(
+            card, text=str(value), font=ctk.CTkFont(size=18, weight="bold")
+        )
         label.pack()
-
         return label
 
-    # LOGIC 
+    def add_tab_widgets(self):
+        tab = self.tabs.tab("Add/Search")
+
+        # INPUT FORM
+        form_frame = ctk.CTkFrame(tab, fg_color="#334155")
+        form_frame.pack(pady=10, padx=10, fill="x")
+
+        ctk.CTkLabel(form_frame, text="Sender:").grid(row=0, column=0, padx=5, pady=5)
+        self.sender_entry = ctk.CTkEntry(form_frame, width=250)
+        self.sender_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        ctk.CTkLabel(form_frame, text="Subject:").grid(row=1, column=0, padx=5, pady=5)
+        self.subject_entry = ctk.CTkEntry(form_frame, width=250)
+        self.subject_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        ctk.CTkLabel(form_frame, text="Body:").grid(row=2, column=0, padx=5, pady=5)
+        self.body_entry = ctk.CTkEntry(form_frame, width=250)
+        self.body_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        ctk.CTkButton(form_frame, text="Add Email", command=self.add_email).grid(
+            row=3, column=0, columnspan=2, pady=10
+        )
+
+        # SEARCH
+        search_frame = ctk.CTkFrame(tab, fg_color="#334155")
+        search_frame.pack(pady=10, padx=10, fill="x")
+        ctk.CTkLabel(search_frame, text="Search:").pack(side="left", padx=5)
+        self.search_entry = ctk.CTkEntry(search_frame, width=250)
+        self.search_entry.pack(side="left", padx=5)
+        ctk.CTkButton(search_frame, text="Search", command=self.search_emails).pack(
+            side="left", padx=5
+        )
+        ctk.CTkButton(search_frame, text="Show All", command=self.display_emails).pack(
+            side="left", padx=5
+        )
+
+        # UPLOADED FILES DISPLAY
+        self.files_frame = ctk.CTkFrame(tab, fg_color="#334155")
+        self.files_frame.pack(pady=10, padx=10, fill="x")
+        ctk.CTkLabel(self.files_frame, text="Uploaded Files:", font=ctk.CTkFont(size=14, weight="bold")).pack(
+            anchor="w"
+        )
+        self.file_labels = []
+
+    def table_tab_widgets(self):
+        tab = self.tabs.tab("Email Table")
+        table_frame = ctk.CTkFrame(tab, fg_color="#1e293b")
+        table_frame.pack(expand=True, fill="both", padx=10, pady=10)
+
+        self.tree = ctk.CTkScrollableFrame(table_frame)
+        self.tree.pack(expand=True, fill="both")
+        self.tree_inner = []
+
+    # -------------------- LOGIC --------------------
     def update_dashboard(self):
         total = len(self.parsed_emails)
         work = sum(1 for e in self.parsed_emails if e.category == "Work")
         personal = sum(1 for e in self.parsed_emails if e.category == "Personal")
         other = sum(1 for e in self.parsed_emails if e.category == "Other")
-
-        self.total_card.config(text=total)
-        self.work_card.config(text=work)
-        self.personal_card.config(text=personal)
-        self.other_card.config(text=other)
+        self.total_card.configure(text=str(total))
+        self.work_card.configure(text=str(work))
+        self.personal_card.configure(text=str(personal))
+        self.other_card.configure(text=str(other))
 
     def add_email(self):
         sender = self.sender_entry.get()
@@ -170,30 +162,28 @@ class EmailApp:
         email_obj = Email(sender, subject, body)
         email_obj.extract_data()
         self.categorizer.categorize(email_obj)
-
         self.parsed_emails.append(email_obj)
 
         self.display_emails()
         self.update_dashboard()
 
-        self.sender_entry.delete(0, tk.END)
-        self.subject_entry.delete(0, tk.END)
-        self.body_entry.delete(0, tk.END)
+        self.sender_entry.delete(0, "end")
+        self.subject_entry.delete(0, "end")
+        self.body_entry.delete(0, "end")
 
     def display_emails(self):
-        for row in self.tree.get_children():
-            self.tree.delete(row)
+        # Clear old widgets
+        for widget in self.tree_inner:
+            widget.destroy()
+        self.tree_inner.clear()
 
         for email in self.parsed_emails:
-            extracted = self.format_extracted(email.extracted_data)
-
-            self.tree.insert("", "end", values=(
-                email.sender,
-                email.subject,
-                email.category,
-                extracted,
-                "Delete"
-            ))
+            text = f"{email.sender} | {email.subject} | {email.category} | {self.format_extracted(email.extracted_data)}"
+            lbl = ctk.CTkLabel(
+                self.tree, text=text, fg_color="#475569", corner_radius=5, pady=5
+            )
+            lbl.pack(fill="x", padx=5, pady=2)
+            self.tree_inner.append(lbl)
 
     def format_extracted(self, data):
         parts = []
@@ -205,61 +195,65 @@ class EmailApp:
             parts.append("Date: " + ", ".join(data["dates"]))
         return " | ".join(parts) if parts else "No data"
 
-    def handle_click(self, event):
-        row = self.tree.identify_row(event.y)
-        col = self.tree.identify_column(event.x)
-
-        if col == "#5":
-            values = self.tree.item(row, "values")
-
-            if messagebox.askyesno("Confirm", "Delete email?"):
-                self.parsed_emails = [
-                    e for e in self.parsed_emails
-                    if not (e.sender == values[0] and e.subject == values[1])
-                ]
-
-                self.display_emails()
-                self.update_dashboard()
-
     def search_emails(self):
         keyword = self.search_entry.get().lower()
-
         filtered = [
-            e for e in self.parsed_emails
+            e
+            for e in self.parsed_emails
             if keyword in e.sender.lower()
             or keyword in e.subject.lower()
             or keyword in e.category.lower()
         ]
-
         self.parsed_emails = filtered
         self.display_emails()
 
     def fetch_emails(self):
         self.parsed_emails.clear()
-
         emails = fetch_emails()
-
         for email in emails:
             email_obj = Email(email["sender"], email["subject"], email["body"])
             email_obj.extract_data()
             self.categorizer.categorize(email_obj)
             self.parsed_emails.append(email_obj)
-
         self.display_emails()
         self.update_dashboard()
 
     def upload_file(self):
         file_path = filedialog.askopenfilename()
-
         if file_path:
+            self.uploaded_files.append(file_path)
             emails = parse_file(file_path)
-
             for email in emails:
                 email_obj = Email(email["sender"], email["subject"], email["body"])
                 email_obj.extract_data()
                 self.categorizer.categorize(email_obj)
                 self.parsed_emails.append(email_obj)
+            self.display_emails()
+            self.update_dashboard()
+            self.show_uploaded_files()
 
+    def show_uploaded_files(self):
+        # Clear old file labels
+        for lbl, btn in self.file_labels:
+            lbl.destroy()
+            btn.destroy()
+        self.file_labels.clear()
+
+        for file_path in self.uploaded_files:
+            file_frame = ctk.CTkFrame(self.files_frame, fg_color="#475569", corner_radius=5)
+            file_frame.pack(fill="x", pady=2)
+            lbl = ctk.CTkLabel(file_frame, text=file_path)
+            lbl.pack(side="left", padx=5)
+            btn = ctk.CTkButton(file_frame, text="Delete", width=60, command=lambda f=file_path: self.delete_file(f))
+            btn.pack(side="right", padx=5)
+            self.file_labels.append((lbl, btn))
+
+    def delete_file(self, file_path):
+        if file_path in self.uploaded_files:
+            self.uploaded_files.remove(file_path)
+            self.show_uploaded_files()
+            # Remove emails from this file
+            self.parsed_emails = [e for e in self.parsed_emails if getattr(e, "source_file", None) != file_path]
             self.display_emails()
             self.update_dashboard()
 
@@ -272,11 +266,6 @@ class EmailApp:
         messagebox.showinfo("Exported", "Excel file created")
 
 
-def main():
-    root = tk.Tk()
-    app = EmailApp(root)
-    root.mainloop()
-
-
 if __name__ == "__main__":
-    main()
+    app = EmailApp()
+    app.mainloop()

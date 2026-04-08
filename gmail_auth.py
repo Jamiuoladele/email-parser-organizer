@@ -3,8 +3,8 @@
 # from email.header import decode_header
 
 # CONFIGURATION 
-# EMAIL = "your_email@gmail.com"          # <-- Replace with your Gmail
-# APP_PASSWORD = "your_app_password"      # <-- Replace with your Gmail App Password
+# EMAIL = "your_email@gmail.com"          #  Replace with your Gmail
+# APP_PASSWORD = "your_app_password"      #  Replace with your Gmail App Password
 # MAX_EMAILS = 5                           # Number of latest emails to fetch
 
 # CONNECT TO GMAIL
