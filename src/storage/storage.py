@@ -19,11 +19,13 @@ def save_emails(emails, filename="data/emails.json"):
 
         print("Emails saved successfully!")
 
+
+
     except Exception as e:
         print("Error saving emails:", e)
 
 
-# ================= NEW FEATURE =================
+#  NEW FEATURE
 def export_to_excel(emails, filename="export.xlsx"):
     try:
         wb = Workbook()

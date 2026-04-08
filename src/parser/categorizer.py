@@ -6,11 +6,9 @@ class EmailCategorizer:
     def categorize(self, email):
         text = (email.subject + " " + email.body).lower()
 
-        if re.search(r"(meeting|project|deadline)", text):
+        if any(word in text for word in ["invoice", "meeting", "project", "deadline"]):
             email.category = "Work"
-        elif re.search(r"(discount|offer|sale)", text):
-            email.category = "Promotion"
-        elif re.search(r"(friend|party|weekend)", text):
+        elif any(word in text for word in ["family", "party", "friend", "birthday"]):
             email.category = "Personal"
         else:
             email.category = "Other"
